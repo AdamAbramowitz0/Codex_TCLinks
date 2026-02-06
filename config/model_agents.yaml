@@ -1,0 +1,40 @@
+models:
+  - id: gpt-5.2
+    provider: openai
+    model_name: gpt-5.2
+    enabled: true
+    strategy_profile: default
+    max_daily_picks: 10
+    temperature: 0.2
+
+  - id: gpt-5.1
+    provider: openai
+    model_name: gpt-5.1
+    enabled: true
+    strategy_profile: default
+    max_daily_picks: 10
+    temperature: 0.2
+
+  - id: gpt-5
+    provider: openai
+    model_name: gpt-5
+    enabled: true
+    strategy_profile: default
+    max_daily_picks: 10
+    temperature: 0.2
+
+  - id: o3
+    provider: openai
+    model_name: o3
+    enabled: true
+    strategy_profile: default
+    max_daily_picks: 10
+    temperature: 0.2
+
+  - id: gpt-4.5
+    provider: openai
+    model_name: gpt-4.5
+    enabled: true
+    strategy_profile: default
+    max_daily_picks: 10
+    temperature: 0.2

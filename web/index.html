@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TC Links Market</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="bg-shape shape-a"></div>
+    <div class="bg-shape shape-b"></div>
+
+    <header class="topbar">
+      <div>
+        <h1>TC Links Market</h1>
+        <p class="muted">Predict Tyler Cowen's next assorted links</p>
+      </div>
+      <div class="auth-block" id="auth-block"></div>
+    </header>
+
+    <main class="layout">
+      <section class="panel">
+        <h2>Current Cycle</h2>
+        <div id="cycle-meta" class="meta-grid"></div>
+
+        <form id="submit-form" class="inline-form">
+          <input id="submit-url" type="url" placeholder="Paste article URL" required />
+          <input id="submit-title" type="text" placeholder="Optional title" />
+          <button type="submit">Submit Link</button>
+        </form>
+
+        <div id="submit-msg" class="muted"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Candidates + Probabilities</h2>
+          <button id="refresh-btn" class="ghost" type="button">Refresh</button>
+        </div>
+        <div id="candidates"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Your Top 10 Picks</h2>
+          <button id="save-picks-btn" type="button">Save Picks</button>
+        </div>
+        <p class="muted">Pick up to 10 links. Rank #1 is your strongest call.</p>
+        <ol id="pick-list" class="pick-list"></ol>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Leaderboards</h2>
+          <select id="board-type">
+            <option value="all">All</option>
+            <option value="human">Humans</option>
+            <option value="ai">AI</option>
+            <option value="curation">Curation</option>
+          </select>
+        </div>
+        <div id="leaderboard"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Link Phone for SMS Uploads</h2>
+        <form id="phone-start" class="inline-form">
+          <input id="phone-number" type="tel" placeholder="+1 555 123 4567" required />
+          <button type="submit">Send Code</button>
+        </form>
+        <form id="phone-verify" class="inline-form">
+          <input id="challenge-id" type="text" placeholder="Challenge ID" required />
+          <input id="phone-code" type="text" placeholder="6-digit code" required />
+          <button type="submit">Verify</button>
+        </form>
+        <div id="phone-msg" class="muted"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Archive Hub</h2>
+        <form id="archive-search" class="inline-form">
+          <input id="archive-q" type="text" placeholder="Search title or URL" />
+          <input id="archive-domain" type="text" placeholder="Domain filter (optional)" />
+          <button type="submit">Search</button>
+        </form>
+        <div id="archive-results"></div>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

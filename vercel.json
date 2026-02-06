@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "functions": {
+    "api/index.py": {
+      "runtime": "python3.12"
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/jobs/daily-faucet",
+      "schedule": "5 0 * * *"
+    },
+    {
+      "path": "/api/jobs/sync-assorted-links",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/jobs/models",
+      "schedule": "15 */6 * * *"
+    },
+    {
+      "path": "/api/jobs/curation-awards",
+      "schedule": "30 */6 * * *"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "api/index.py"
+    }
+  ]
+}
