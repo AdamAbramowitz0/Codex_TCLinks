@@ -54,7 +54,7 @@ class Storage:
 
             self.conn = psycopg.connect(db_path, row_factory=dict_row)
         else:
-            self.conn = sqlite3.connect(db_path)
+            self.conn = sqlite3.connect(db_path, check_same_thread=False)
             self.conn.row_factory = sqlite3.Row
             self.conn.execute("PRAGMA foreign_keys = ON")
 
@@ -1116,15 +1116,16 @@ class Storage:
                 ),
             )
 
-    def list_source_posts(self, limit: int = 100) -> List[Dict[str, Any]]:
+    def list_source_posts(self, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
         rows = self._execute(
             """
             SELECT source_post_url, title, published_at, extracted_links_json, processed_at
             FROM source_posts
             ORDER BY published_at DESC
             LIMIT ?
+            OFFSET ?
             """,
-            (limit,),
+            (limit, offset),
         ).fetchall()
 
         payload = []
@@ -1133,6 +1134,10 @@ class Storage:
             item["extracted_links"] = json.loads(item.pop("extracted_links_json", "[]"))
             payload.append(item)
         return payload
+
+    def count_source_posts(self) -> int:
+        row = self._execute("SELECT COUNT(*) AS c FROM source_posts").fetchone()
+        return int(row["c"]) if row else 0
 
     def claim_job_run(self, job_name: str, run_key: str, details: Optional[Dict[str, Any]] = None) -> bool:
         try:

@@ -45,12 +45,27 @@ class JobService:
         result = self.model_runner.run_cycle(cycle.id)
         return {"skipped": False, "run_key": run_key, "cycle_id": cycle.id, "result": result}
 
-    def sync_assorted_links(self, force: bool = False) -> Dict[str, object]:
+    def sync_assorted_links(
+        self,
+        force: bool = False,
+        limit: int = 10,
+        max_feed_pages: int = 1,
+    ) -> Dict[str, object]:
         run_key = datetime.now(timezone.utc).strftime("%Y%m%d%H")
+        run_key = f"{run_key}:limit={limit}:pages={max_feed_pages}"
         if not force and not self.storage.claim_job_run("sync_assorted_links", run_key):
             return {"skipped": True, "reason": "already_ran", "run_key": run_key}
 
-        return {"skipped": False, "run_key": run_key, **self.ingestor.sync(self.storage, self.market)}
+        return {
+            "skipped": False,
+            "run_key": run_key,
+            **self.ingestor.sync(
+                self.storage,
+                self.market,
+                limit=limit,
+                max_feed_pages=max_feed_pages,
+            ),
+        }
 
     def run_curation_rewards(
         self,

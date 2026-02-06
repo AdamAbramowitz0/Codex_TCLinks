@@ -101,6 +101,8 @@ If you want persistent SQLite with almost no code changes, deploy the included `
 - `POST /api/models/reload`
 - `POST /api/models/run`
 - `GET /api/models/{model_id}/picks/{cycle_id}`
+- `GET /api/archive/posts?limit=100&offset=0`
+- `GET /api/jobs/sync-assorted-links?force=1&max_feed_pages=25&limit=0` (backfill mode)
 - `GET /api/health`
 
 ## Testing

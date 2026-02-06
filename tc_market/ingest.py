@@ -9,7 +9,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Dict, List
-from urllib.parse import urlparse
+from urllib.parse import parse_qsl, urlencode, urlparse, urlsplit, urlunsplit
 from urllib.request import Request, urlopen
 
 from tc_market.market import MarketService
@@ -36,6 +36,18 @@ class MarginalRevolutionIngestor:
         req = Request(url, headers={"User-Agent": "tc-links-market/1.0"})
         with urlopen(req, timeout=20) as response:
             return response.read().decode("utf-8", errors="replace")
+
+    def _feed_url_for_page(self, page: int) -> str:
+        if page <= 1:
+            return self.feed_url
+        if self.feed_url.startswith("file://"):
+            return self.feed_url
+
+        parts = urlsplit(self.feed_url)
+        query_pairs = parse_qsl(parts.query, keep_blank_values=True)
+        filtered = [(key, value) for key, value in query_pairs if key != "paged"]
+        filtered.append(("paged", str(page)))
+        return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(filtered), parts.fragment))
 
     @staticmethod
     def _normalize_published(value: str) -> str:
@@ -116,11 +128,25 @@ class MarginalRevolutionIngestor:
 
         return links
 
-    def fetch_recent_assorted_posts(self, limit: int = 10) -> List[AssortedLinksPost]:
-        feed_xml = self._fetch_text(self.feed_url)
-        entries = self._extract_post_entries(feed_xml)
-
-        filtered = [entry for entry in entries if ASSORTED_LINKS_PATTERN.search(entry["title"])][:limit]
+    def fetch_recent_assorted_posts(self, limit: int = 10, max_feed_pages: int = 1) -> List[AssortedLinksPost]:
+        filtered: List[Dict[str, str]] = []
+        seen_post_links = set()
+        for page in range(1, max(1, max_feed_pages) + 1):
+            feed_xml = self._fetch_text(self._feed_url_for_page(page))
+            entries = self._extract_post_entries(feed_xml)
+            if not entries:
+                break
+            for entry in entries:
+                if not ASSORTED_LINKS_PATTERN.search(entry["title"]):
+                    continue
+                if entry["link"] in seen_post_links:
+                    continue
+                seen_post_links.add(entry["link"])
+                filtered.append(entry)
+                if limit > 0 and len(filtered) >= limit:
+                    break
+            if limit > 0 and len(filtered) >= limit:
+                break
 
         posts: List[AssortedLinksPost] = []
         for entry in filtered:
@@ -138,12 +164,18 @@ class MarginalRevolutionIngestor:
         posts.sort(key=lambda post: post.published_at)
         return posts
 
-    def sync(self, storage: Storage, market: MarketService, limit: int = 10) -> Dict[str, object]:
-        posts = self.fetch_recent_assorted_posts(limit=limit)
+    def sync(
+        self,
+        storage: Storage,
+        market: MarketService,
+        limit: int = 10,
+        max_feed_pages: int = 1,
+    ) -> Dict[str, object]:
+        posts = self.fetch_recent_assorted_posts(limit=limit, max_feed_pages=max_feed_pages)
         if not posts:
             if storage.get_open_cycle() is None:
                 storage.create_cycle()
-            return {"processed": 0, "settlements": []}
+            return {"processed": 0, "settlements": [], "max_feed_pages": max_feed_pages}
 
         unseen_posts = [post for post in posts if not storage.source_post_seen(post.url)]
         if not unseen_posts:
@@ -151,7 +183,7 @@ class MarginalRevolutionIngestor:
                 # If bootstrapped from historical data only, ensure an active market exists.
                 latest = posts[-1].published_at[:10]
                 storage.create_cycle(latest)
-            return {"processed": 0, "settlements": []}
+            return {"processed": 0, "settlements": [], "max_feed_pages": max_feed_pages}
 
         current_open_cycle = storage.get_open_cycle()
         settlements = []
@@ -194,4 +226,5 @@ class MarginalRevolutionIngestor:
             "processed": len(unseen_posts),
             "settlements": settlements,
             "bootstrap_mode": bootstrap_mode,
+            "max_feed_pages": max_feed_pages,
         }

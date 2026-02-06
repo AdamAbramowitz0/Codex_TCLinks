@@ -78,11 +78,21 @@
 
       <section class="panel">
         <h2>Archive Hub</h2>
+        <form id="archive-backfill" class="inline-form">
+          <input id="archive-pages" type="number" min="1" value="5" />
+          <input id="archive-limit" type="number" min="0" value="0" />
+          <button type="submit">Sync MR Feed</button>
+        </form>
+        <div id="archive-backfill-msg" class="muted"></div>
+
         <form id="archive-search" class="inline-form">
           <input id="archive-q" type="text" placeholder="Search title or URL" />
           <input id="archive-domain" type="text" placeholder="Domain filter (optional)" />
           <button type="submit">Search</button>
         </form>
+        <h3>Source Posts</h3>
+        <div id="archive-posts"></div>
+        <h3>Extracted Links</h3>
         <div id="archive-results"></div>
       </section>
     </main>

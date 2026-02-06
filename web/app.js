@@ -228,6 +228,32 @@ async function loadArchive(q = "", domain = "") {
   });
 }
 
+async function loadArchivePosts(limit = 100, offset = 0) {
+  const payload = await api(
+    `/api/archive/posts?limit=${encodeURIComponent(limit)}&offset=${encodeURIComponent(offset)}`
+  );
+  const container = document.getElementById("archive-posts");
+  const rows = payload.results || [];
+
+  if (!rows.length) {
+    container.innerHTML = `<div class="muted">No source posts archived yet.</div>`;
+    return;
+  }
+
+  container.innerHTML = "";
+  rows.forEach((row) => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div><strong>${row.title}</strong></div>
+      <div class="small">${row.published_at}</div>
+      <div class="small"><a href="${row.source_post_url}" target="_blank" rel="noreferrer">${row.source_post_url}</a></div>
+      <div class="small">Extracted links: ${row.extracted_links.length}</div>
+    `;
+    container.appendChild(card);
+  });
+}
+
 async function refreshCycleData() {
   const me = await api("/api/me");
   state.user = me.user;
@@ -352,13 +378,32 @@ function bindEvents() {
     const domain = document.getElementById("archive-domain").value.trim();
     await loadArchive(q, domain);
   });
+
+  document.getElementById("archive-backfill").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const msg = document.getElementById("archive-backfill-msg");
+    const maxFeedPages = Number(document.getElementById("archive-pages").value || "1");
+    const limit = Number(document.getElementById("archive-limit").value || "0");
+    try {
+      const payload = await api(
+        `/api/jobs/sync-assorted-links?force=1&max_feed_pages=${encodeURIComponent(maxFeedPages)}&limit=${encodeURIComponent(limit)}`
+      );
+      text(
+        msg,
+        `Sync complete. Processed posts: ${payload.processed || 0}. Settlements: ${(payload.settlements || []).length}.`
+      );
+      await Promise.all([refreshCycleData(), loadArchive(), loadArchivePosts()]);
+    } catch (err) {
+      text(msg, err.message);
+    }
+  });
 }
 
 async function main() {
   bindEvents();
   await refreshCycleData();
   await loadLeaderboard();
-  await loadArchive();
+  await Promise.all([loadArchive(), loadArchivePosts()]);
 }
 
 main().catch((err) => {

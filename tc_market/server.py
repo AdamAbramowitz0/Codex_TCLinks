@@ -253,7 +253,15 @@ class APIHandler(BaseHTTPRequestHandler):
                 if not self._require_job_token(query_token):
                     return
                 force = query.get("force", ["0"])[0] == "1"
-                result = self.jobs.sync_assorted_links(force=force)
+                limit = int(query.get("limit", ["10"])[0])
+                max_feed_pages = int(query.get("max_feed_pages", ["1"])[0])
+                if max_feed_pages < 1:
+                    raise ValueError("max_feed_pages must be >= 1")
+                result = self.jobs.sync_assorted_links(
+                    force=force,
+                    limit=limit,
+                    max_feed_pages=max_feed_pages,
+                )
                 self._send_json(200, result)
                 return
 
@@ -349,6 +357,26 @@ class APIHandler(BaseHTTPRequestHandler):
                 self._send_json(200, {"results": rows})
                 return
 
+            if parts == ["api", "archive", "posts"]:
+                limit = int(query.get("limit", ["100"])[0])
+                offset = int(query.get("offset", ["0"])[0])
+                if limit < 1:
+                    raise ValueError("limit must be >= 1")
+                if offset < 0:
+                    raise ValueError("offset must be >= 0")
+                rows = self.storage.list_source_posts(limit=limit, offset=offset)
+                total = self.storage.count_source_posts()
+                self._send_json(
+                    200,
+                    {
+                        "results": rows,
+                        "limit": limit,
+                        "offset": offset,
+                        "total": total,
+                    },
+                )
+                return
+
             if len(parts) == 2 and parts[0] == "r":
                 candidate_id = parts[1]
                 user = self._get_current_user()
@@ -365,6 +393,8 @@ class APIHandler(BaseHTTPRequestHandler):
                 return
 
             self._send_json(404, {"error": "Not found"})
+        except ValueError as exc:
+            self._send_json(400, {"error": str(exc)})
         except Exception as exc:  # pragma: no cover
             self._send_json(500, {"error": str(exc)})
 
@@ -501,7 +531,15 @@ class APIHandler(BaseHTTPRequestHandler):
             if parts == ["api", "jobs", "sync-assorted-links"]:
                 if not self._require_job_token():
                     return
-                result = self.jobs.sync_assorted_links(force=bool(payload.get("force", False)))
+                limit = int(payload.get("limit", 10))
+                max_feed_pages = int(payload.get("max_feed_pages", 1))
+                if max_feed_pages < 1:
+                    raise ValueError("max_feed_pages must be >= 1")
+                result = self.jobs.sync_assorted_links(
+                    force=bool(payload.get("force", False)),
+                    limit=limit,
+                    max_feed_pages=max_feed_pages,
+                )
                 self._send_json(200, result)
                 return
 
